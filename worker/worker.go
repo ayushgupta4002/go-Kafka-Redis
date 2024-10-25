@@ -9,19 +9,23 @@ import (
 	"strings"
 	"syscall"
 
+	redisclient "github.com/ayushgupta4002/go-kafka/redisClient"
+
 	"github.com/IBM/sarama"
 	"github.com/go-redis/redis/v8"
 )
 
 var rdb *redis.Client
-var ctx = context.Background()
+var ctx context.Context
 
 func main() {
-
-	rdb = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379", // Redis address
-		DB:   0,                // Use default DB
-	})
+	redisclient.InitRedis() // Initialize Redis client
+	rdb = redisclient.GetInstance()
+	ctx = redisclient.GetContext()
+	// rdb = redis.NewClient(&redis.Options{
+	// 	Addr: "localhost:6379", // Redis address
+	// 	DB:   0,                // Use default DB
+	// })
 	topic := "comments"
 	worker, err := connectConsumer([]string{"localhost:29092"})
 	if err != nil {
@@ -90,7 +94,7 @@ func connectConsumer(connectUrl []string) (sarama.Consumer, error) {
 
 func processQueueAsync(queue chan string) {
 	// Process the message and store it in Redis
-		for message := range queue {
+	for message := range queue {
 		err := storeInRedis(message)
 		if err != nil {
 			log.Printf("Failed to store message in Redis: %v", err)

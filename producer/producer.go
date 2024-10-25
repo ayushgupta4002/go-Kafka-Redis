@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/IBM/sarama"
+	redisclient "github.com/ayushgupta4002/go-kafka/redisClient"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 )
@@ -18,6 +18,7 @@ type Comment struct {
 var rdb *redis.Client
 
 func main() {
+	redisclient.InitRedis() // Initialize Redis client
 
 	rdb = redis.NewClient(&redis.Options{
 		Addr: "localhost:6379", // Redis address
@@ -86,10 +87,9 @@ func pushKafka(topic string, message []byte) error {
 
 }
 
-var ctx = context.Background()
-
 func getRedis(c *fiber.Ctx) error {
-
+	rdb := redisclient.GetInstance()
+	ctx := redisclient.GetContext()
 	key, err := rdb.Keys(ctx, "*").Result()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Could not fetch keys: %v", err))
